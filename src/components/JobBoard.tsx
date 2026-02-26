@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 
 const jobCategories = ["All Departments", "Engineering", "Design", "Product", "Operations", "Sales"];
 
@@ -15,19 +15,40 @@ const initialJobs = [
 
 export default function JobBoard() {
     const [activeCategory, setActiveCategory] = useState("All Departments");
+    const [jobs, setJobs] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    React.useEffect(() => {
+        const fetchJobs = async () => {
+            try {
+                // Public list of jobs doesn't require auth token in many cases, 
+                // but our apiFetch handles it if available.
+                // For public view, we might need a way to specify which tenant's jobs to show,
+                // or show all. For now, let's fetch all active jobs.
+                const response = await fetch("http://localhost:8000/api/v1/jobs");
+                const data = await response.json();
+                setJobs(data);
+            } catch (err) {
+                console.error("Failed to fetch jobs", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchJobs();
+    }, []);
 
     const filteredJobs = activeCategory === "All Departments"
-        ? initialJobs
-        : initialJobs.filter(job => job.dept === activeCategory);
+        ? jobs
+        : jobs.filter(job => job.department === activeCategory);
 
     return (
-        <section className="py-32 bg-white" id="positions">
+        <section className="py-24 bg-white" id="positions">
             <div className="max-w-7xl mx-auto px-8">
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
+                <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-8">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
+                        viewport={{ once: false, amount: 0.3 }}
                         transition={{ duration: 0.6 }}
                     >
                         <span className="text-accent font-bold text-xs uppercase tracking-widest mb-4 block">Available Roles</span>
@@ -37,7 +58,7 @@ export default function JobBoard() {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
+                        viewport={{ once: false, amount: 0.3 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
                         className="flex flex-wrap gap-2"
                     >
@@ -46,8 +67,8 @@ export default function JobBoard() {
                                 key={cat}
                                 onClick={() => setActiveCategory(cat)}
                                 className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all ${activeCategory === cat
-                                        ? "bg-primary text-white shadow-xl shadow-primary/20"
-                                        : "bg-cream text-primary hover:bg-primary/5"
+                                    ? "bg-primary text-white shadow-xl shadow-primary/20"
+                                    : "bg-cream text-primary hover:bg-primary/5"
                                     }`}
                             >
                                 {cat}
@@ -86,9 +107,12 @@ export default function JobBoard() {
                                         📍 {job.location}
                                     </p>
                                 </div>
-                                <button className="mt-8 w-full py-4 rounded-2xl bg-white border border-primary/5 text-primary text-sm font-bold group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all">
+                                <Link
+                                    href={`/careers?apply=${job.id}`}
+                                    className="mt-8 w-full py-4 rounded-2xl bg-white border border-primary/5 text-primary text-sm font-bold group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all text-center block"
+                                >
                                     Apply Now
-                                </button>
+                                </Link>
                             </motion.div>
                         ))}
                     </AnimatePresence>

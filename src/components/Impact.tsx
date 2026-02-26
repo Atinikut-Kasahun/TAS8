@@ -7,16 +7,16 @@ export default function Impact() {
         <motion.section
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
+            viewport={{ once: false, amount: 0.2 }}
             transition={{ duration: 0.8 }}
-            className="py-32 bg-[#1A1C23] text-center"
+            className="py-24 bg-[#1A1C23] text-center"
             id="positions"
         >
             <div className="max-w-4xl mx-auto px-8">
                 <motion.span
                     initial={{ opacity: 0, y: 10 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
+                    viewport={{ once: false, amount: 0.1 }}
                     className="text-accent font-bold text-xs uppercase tracking-widest mb-6 block"
                 >
                     Get Started
@@ -24,7 +24,7 @@ export default function Impact() {
                 <motion.h2
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
+                    viewport={{ once: false, amount: 0.1 }}
                     transition={{ duration: 0.6 }}
                     className="text-5xl font-bold text-white mb-6"
                 >
@@ -33,7 +33,7 @@ export default function Impact() {
                 <motion.p
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
+                    viewport={{ once: false, amount: 0.1 }}
                     transition={{ duration: 0.6, delay: 0.1 }}
                     className="text-lg text-white/60 mb-12 max-w-2xl mx-auto font-medium"
                 >
@@ -44,7 +44,7 @@ export default function Impact() {
                     href="#positions"
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
+                    viewport={{ once: false, amount: 0.1 }}
                     transition={{ duration: 0.5, delay: 0.2 }}
                     whileHover={{ scale: 1.04, y: -2 }}
                     whileTap={{ scale: 0.98 }}

@@ -4,15 +4,15 @@ import { motion } from "framer-motion";
 
 export default function Hero() {
     return (
-        <section className="min-h-screen flex items-center bg-gradient-to-br from-[#F8FAFC] to-[#EFF6FF] pt-24">
-            <div className="max-w-7xl mx-auto px-8 grid grid-cols-2 gap-16 items-center py-20">
+        <section className="min-h-[85vh] flex items-center bg-gradient-to-br from-[#F8FAFC] to-[#EFF6FF] pt-20">
+            <div className="max-w-7xl mx-auto px-8 grid grid-cols-2 gap-16 items-center py-16">
                 {/* Left Content */}
                 <div>
                     <motion.h1
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.1 }}
-                        className="text-6xl font-bold leading-tight text-primary mb-6"
+                        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+                        className="text-6xl font-bold leading-tight text-primary mb-4"
                     >
                         Build the Future with{" "}
                         <span className="text-accent underline decoration-brandYellow/30 underline-offset-8">
@@ -23,7 +23,7 @@ export default function Hero() {
                     <motion.p
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
+                        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
                         className="text-lg text-primary/70 font-medium leading-relaxed mb-10 max-w-xl"
                     >
                         Join a team of innovators, creators, and problem-solvers who are
@@ -33,7 +33,7 @@ export default function Hero() {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
+                        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
                         className="relative max-w-lg mb-12"
                     >
                         <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
@@ -118,8 +118,9 @@ export default function Hero() {
                     {/* Floating badge */}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.5, delay: 0.6 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: false }}
+                        transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
                         className="absolute -top-6 -right-6 bg-white shadow-2xl rounded-2xl px-6 py-4 flex items-center gap-4 border border-primary/5"
                     >
                         <div className="w-11 h-11 bg-accent/10 rounded-full flex items-center justify-center text-accent text-xl font-bold">
@@ -132,6 +133,6 @@ export default function Hero() {
                     </motion.div>
                 </motion.div>
             </div>
-        </section>
+        </section >
     );
 }

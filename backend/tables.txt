@@ -1,0 +1,1 @@
+main.applicants, main.cache, main.cache_locks, main.failed_jobs, main.interviews, main.job_batches, main.job_postings, main.job_requisitions, main.jobs, main.migrations, main.password_reset_tokens, main.permission_role, main.permissions, main.personal_access_tokens, main.role_user, main.roles, main.sessions, main.tenants, main.users

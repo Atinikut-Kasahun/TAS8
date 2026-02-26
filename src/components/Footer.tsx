@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
 
 const quickLinks = ["Open Positions", "About Us", "Life at Droga", "Blog"];
@@ -14,23 +13,24 @@ export default function Footer() {
                 <div className="grid grid-cols-3 gap-20 pb-16 border-b border-black/5">
                     {/* Brand */}
                     <div>
-                        <Link href="/" className="flex items-center gap-4 mb-8">
-                            <div className="relative w-[50px] h-[50px]">
-                                <Image
-                                    src="/TAS logo.png"
-                                    alt="Droga Group Logo"
-                                    fill
-                                    className="object-contain"
-                                />
-                            </div>
-                            <div className="flex flex-col border-l border-primary/10 pl-4">
-                                <span className="text-primary font-bold text-lg leading-none tracking-tight">
-                                    Droga Group
+                        <Link href="/" className="flex flex-col group relative mb-8">
+                            <div className="flex items-center">
+                                <span className="text-primary font-black text-2xl tracking-tighter">
+                                    DROGA
                                 </span>
-                                <span className="text-accent text-[10px] font-bold uppercase tracking-widest mt-1">
+                                <span className="text-accent font-light text-2xl tracking-normal ml-1.5">
+                                    GROUP
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2 -mt-0.5">
+                                <div className="h-[1px] w-3 bg-accent/30" />
+                                <span className="text-[9px] font-bold uppercase tracking-[0.4em] text-primary/60">
                                     Hiring Hub
                                 </span>
                             </div>
+
+                            {/* Hover Effect Underline */}
+                            <div className="absolute -bottom-1 left-0 w-0 h-[1.5px] bg-accent transition-all duration-300 group-hover:w-1/2" />
                         </Link>
                         <p className="text-primary/50 text-sm font-medium leading-relaxed max-w-56">
                             Building the future of quality care, one innovation at a time.

@@ -10,17 +10,17 @@ const culturePoints = [
 
 export default function Culture() {
     return (
-        <section className="py-32 bg-cream/50" id="culture">
+        <section className="py-24 bg-cream/50" id="culture">
             <div className="max-w-7xl mx-auto px-8 grid grid-cols-2 gap-24 items-center">
                 {/* Left Text */}
                 <motion.div
                     initial={{ opacity: 0, x: -40 }}
                     whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
+                    viewport={{ once: false, amount: 0.3 }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
                 >
                     <span className="text-accent font-bold text-xs uppercase tracking-widest mb-6 block">Our DNA</span>
-                    <h2 className="text-5xl font-bold text-primary mb-10">
+                    <h2 className="text-5xl font-bold text-primary mb-6">
                         Our Culture
                     </h2>
                     <div className="space-y-8">
@@ -29,7 +29,7 @@ export default function Culture() {
                                 key={i}
                                 initial={{ opacity: 0, y: 10 }}
                                 whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
+                                viewport={{ once: false, amount: 0.1 }}
                                 transition={{ duration: 0.5, delay: i * 0.1 }}
                                 className="group"
                             >
@@ -49,7 +49,7 @@ export default function Culture() {
                 <motion.div
                     initial={{ opacity: 0, x: 40 }}
                     whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
+                    viewport={{ once: false, amount: 0.2 }}
                     transition={{ duration: 0.7 }}
                     className="grid grid-cols-2 grid-rows-2 gap-4 h-[480px]"
                 >
@@ -90,11 +90,11 @@ export default function Culture() {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
+                        viewport={{ once: false, amount: 0.2 }}
                         transition={{ duration: 0.6 }}
-                        className="bg-white rounded-[40px] p-10 shadow-2xl shadow-primary/5 border border-primary/5 relative overflow-hidden"
+                        className="bg-white rounded-[40px] p-8 shadow-2xl shadow-primary/5 border border-primary/5 relative overflow-hidden"
                     >
-                        <div className="flex items-center justify-between mb-10">
+                        <div className="flex items-center justify-between mb-8">
                             <div>
                                 <h4 className="text-lg font-bold text-primary">Team Diversity</h4>
                                 <p className="text-xs text-primary/40 font-medium">Distribution by region</p>
@@ -121,7 +121,7 @@ export default function Culture() {
                                         <motion.div
                                             initial={{ width: 0 }}
                                             whileInView={{ width: row.pct }}
-                                            viewport={{ once: true }}
+                                            viewport={{ once: false }}
                                             transition={{ duration: 1, delay: 0.5 + (i * 0.1) }}
                                             className={`h-full ${row.color} rounded-full`}
                                         />
