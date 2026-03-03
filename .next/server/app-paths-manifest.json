@@ -1,4 +1,7 @@
 {
+  "/icon.jpg/route": "app/icon.jpg/route.js",
+  "/dashboard/page": "app/dashboard/page.js",
   "/page": "app/page.js",
+  "/admin/dashboard/page": "app/admin/dashboard/page.js",
   "/login/page": "app/login/page.js"
 }

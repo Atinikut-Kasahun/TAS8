@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch, API_URL } from '@/lib/api';
 
@@ -46,15 +46,13 @@ export default function TADashboard({ user, activeTab: initialTab, onLogout }: {
         }
     }, [drawerApp]);
 
-    // Poll URL for live search changes written by Navbar
+    const searchParams = useSearchParams();
+    const liveSearch = searchParams.get('search') ?? '';
+
+    // Sync local search state with URL search param
     useEffect(() => {
-        const interval = setInterval(() => {
-            const params = new URLSearchParams(window.location.search);
-            const s = params.get('search') ?? '';
-            setSearch(prev => (prev !== s ? s : prev));
-        }, 200);
-        return () => clearInterval(interval);
-    }, []);
+        setSearch(liveSearch);
+    }, [liveSearch]);
 
     const handleSendMention = async () => {
         if (!mentionUser || !mentionNote.trim()) return;

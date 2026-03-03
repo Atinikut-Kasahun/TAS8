@@ -9,6 +9,9 @@ use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use App\Models\Event;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -29,110 +32,147 @@ class DashboardController extends Controller
 
     private function adminDashboard(): JsonResponse
     {
-        $today = \Carbon\Carbon::today();
-        $yesterday = \Carbon\Carbon::yesterday();
-        $thirtyDaysAgo = now()->subDays(30);
+        $stats = Cache::remember('admin_dashboard_stats', now()->addMinutes(1), function () {
+            $today = \Carbon\Carbon::today();
+            $yesterday = \Carbon\Carbon::yesterday();
+            $thirtyDaysAgo = now()->subDays(30);
 
-        // Core Counts
-        $activeJobsCount = \App\Models\JobPosting::where('status', 'active')->count();
-        $candidatesCount = \App\Models\Applicant::count();
-        $employeesCount = \App\Models\User::count();
-        $newTodayCount = \App\Models\Applicant::whereDate('created_at', $today)->count();
-        $activeEventsCount = \App\Models\Event::where('event_date', '>=', now())->count();
+            // Core Counts
+            $activeJobsCount = \App\Models\JobPosting::where('status', 'active')->count();
+            $candidatesCount = \App\Models\Applicant::count();
+            $employeesCount = \App\Models\User::count();
+            $newTodayCount = \App\Models\Applicant::whereDate('created_at', $today)->count();
+            $activeEventsCount = \App\Models\Event::where('event_date', '>=', now())->count();
 
-        // Trend Calculations
-        $jobsPastCount = \App\Models\JobPosting::where('status', 'active')->where('created_at', '<', $thirtyDaysAgo)->count();
-        $jobsTrend = $jobsPastCount > 0 ? round((($activeJobsCount - $jobsPastCount) / $jobsPastCount) * 100, 1) : ($activeJobsCount > 0 ? 100 : 0);
+            // Trend Calculations
+            $jobsPastCount = \App\Models\JobPosting::where('status', 'active')->where('created_at', '<', $thirtyDaysAgo)->count();
+            $jobsTrend = $jobsPastCount > 0 ? round((($activeJobsCount - $jobsPastCount) / $jobsPastCount) * 100, 1) : ($activeJobsCount > 0 ? 100 : 0);
 
-        $candidatesPastCount = \App\Models\Applicant::where('created_at', '<', $thirtyDaysAgo)->count();
-        $candidatesTrend = $candidatesPastCount > 0 ? round((($candidatesCount - $candidatesPastCount) / $candidatesPastCount) * 100, 1) : ($candidatesCount > 0 ? 100 : 0);
+            $candidatesPastCount = \App\Models\Applicant::where('created_at', '<', $thirtyDaysAgo)->count();
+            $candidatesTrend = $candidatesPastCount > 0 ? round((($candidatesCount - $candidatesPastCount) / $candidatesPastCount) * 100, 1) : ($candidatesCount > 0 ? 100 : 0);
 
-        $newYesterdayCount = \App\Models\Applicant::whereDate('created_at', $yesterday)->count();
-        $newTodayTrend = $newYesterdayCount > 0 ? round((($newTodayCount - $newYesterdayCount) / $newYesterdayCount) * 100, 1) : ($newTodayCount > 0 ? 100 : 0);
+            $newYesterdayCount = \App\Models\Applicant::whereDate('created_at', $yesterday)->count();
+            $newTodayTrend = $newYesterdayCount > 0 ? round((($newTodayCount - $newYesterdayCount) / $newYesterdayCount) * 100, 1) : ($newTodayCount > 0 ? 100 : 0);
 
-        $eventsPastCount = \App\Models\Event::where('event_date', '>=', now()->subDays(7))->where('created_at', '<', now()->subDays(7))->count();
-        $eventsTrend = $eventsPastCount > 0 ? round((($activeEventsCount - $eventsPastCount) / $eventsPastCount) * 100, 1) : ($activeEventsCount > 0 ? 100 : 0);
+            $eventsPastCount = \App\Models\Event::where('event_date', '>=', now()->subDays(7))->where('created_at', '<', now()->subDays(7))->count();
+            $eventsTrend = $eventsPastCount > 0 ? round((($activeEventsCount - $eventsPastCount) / $eventsPastCount) * 100, 1) : ($activeEventsCount > 0 ? 100 : 0);
 
-        $stats = [
-            'total_tenants' => \App\Models\Tenant::count(),
-            'total_active_jobs' => $activeJobsCount,
-            'total_active_jobs_trend' => $jobsTrend,
-            'total_active_jobs_label' => 'vs last month',
-            'total_candidates' => $candidatesCount,
-            'total_candidates_trend' => $candidatesTrend,
-            'total_candidates_label' => 'vs last month',
-            'total_employees' => $employeesCount,
-            'new_applications_today' => $newTodayCount,
-            'new_applications_today_trend' => $newTodayTrend,
-            'new_applications_today_label' => 'vs yesterday',
-            'active_events' => $activeEventsCount,
-            'active_events_trend' => $eventsTrend,
-            'active_events_label' => 'vs last week',
-            'tenants_breakdown' => \App\Models\Tenant::withCount([
-                'jobPostings as active_jobs_count' => function ($query) {
-                    $query->where('status', 'active');
-                },
-                'jobPostings',
-                'jobRequisitions',
-                'users',
-                'applicants',
-                'applicants as hired_count' => function ($query) {
-                    $query->where('status', 'hired');
-                }
-            ])->get()->map(function ($tenant) {
-                $tenant->conversion_rate = $tenant->applicants_count > 0
-                    ? round(($tenant->hired_count / $tenant->applicants_count) * 100, 1)
-                    : 0;
-                return $tenant;
-            }),
-            'recent_global_applicants' => \App\Models\Applicant::with('tenant', 'jobPosting')
-                ->orderBy('created_at', 'desc')
-                ->limit(5)
-                ->get(),
-        ];
+            return [
+                'total_tenants' => \App\Models\Tenant::count(),
+                'total_active_jobs' => $activeJobsCount,
+                'total_active_jobs_trend' => $jobsTrend,
+                'total_active_jobs_label' => 'vs last month',
+                'total_candidates' => $candidatesCount,
+                'total_candidates_trend' => $candidatesTrend,
+                'total_candidates_label' => 'vs last month',
+                'total_employees' => $employeesCount,
+                'new_applications_today' => $newTodayCount,
+                'new_applications_today_trend' => $newTodayTrend,
+                'new_applications_today_label' => 'vs yesterday',
+                'active_events' => $activeEventsCount,
+                'active_events_trend' => $eventsTrend,
+                'active_events_label' => 'vs last week',
+                'tenants_breakdown' => \App\Models\Tenant::withCount([
+                    'jobPostings as active_jobs_count' => function ($query) {
+                        $query->where('status', 'active');
+                    },
+                    'jobPostings',
+                    'jobRequisitions',
+                    'users',
+                    'applicants',
+                    'applicants as hired_count' => function ($query) {
+                        $query->where('status', 'hired');
+                    }
+                ])->get()->map(function ($tenant) {
+                    $tenant->conversion_rate = $tenant->applicants_count > 0
+                        ? round(($tenant->hired_count / $tenant->applicants_count) * 100, 1)
+                        : 0;
+                    return $tenant;
+                }),
+                'recent_global_applicants' => \App\Models\Applicant::with('tenant', 'jobPosting')
+                    ->orderBy('created_at', 'desc')
+                    ->limit(5)
+                    ->get(),
+            ];
+        });
 
         return response()->json($stats);
     }
 
     private function taManagerDashboard($tenantId): JsonResponse
     {
-        $hiredApps = \App\Models\Applicant::where('tenant_id', $tenantId)->where('status', 'hired')->get();
-        $avgTime = $hiredApps->count() > 0 ? round($hiredApps->map(function ($app) {
-            return $app->created_at->diffInDays($app->updated_at);
-        })->average()) : 0;
+        $stats = Cache::remember("ta_manager_dashboard_stats_{$tenantId}", now()->addMinutes(1), function () use ($tenantId) {
+            $today = Carbon::today();
+            $yesterday = Carbon::yesterday();
+            $thirtyDaysAgo = now()->subDays(30);
 
-        $sources = \App\Models\Applicant::where('tenant_id', $tenantId)
-            ->select('source', DB::raw('count(*) as count'))
-            ->groupBy('source')
-            ->orderByDesc('count')
-            ->get();
+            // Core Counts
+            $activeJobsCount = JobPosting::where('tenant_id', $tenantId)->where('status', 'active')->count();
+            $candidatesCount = \App\Models\Applicant::where('tenant_id', $tenantId)->count();
+            $employeesCount = \App\Models\User::where('tenant_id', $tenantId)->count();
+            $newTodayCount = \App\Models\Applicant::where('tenant_id', $tenantId)->whereDate('created_at', $today)->count();
+            $activeEventsCount = Event::where('tenant_id', $tenantId)->where('event_date', '>=', now())->count();
 
-        $stats = [
-            'total_active_jobs' => JobPosting::where('tenant_id', $tenantId)->where('status', 'active')->count(),
-            'total_candidates' => \App\Models\Applicant::where('tenant_id', $tenantId)->count(),
-            'total_employees' => \App\Models\User::where('tenant_id', $tenantId)->count(),
-            'new_applications_today' => \App\Models\Applicant::where('tenant_id', $tenantId)->whereDate('created_at', \Carbon\Carbon::today())->count(),
-            'pending_requisitions' => JobRequisition::where('tenant_id', $tenantId)->where('status', 'pending')->count(),
-            'recent_applicants' => \App\Models\Applicant::with('jobPosting')
-                ->where('tenant_id', $tenantId)
-                ->orderBy('created_at', 'desc')
-                ->limit(5)
-                ->get(),
-            'funnel' => [
-                'applied' => \App\Models\Applicant::where('tenant_id', $tenantId)->count(),
-                'interview' => \App\Models\Applicant::where('tenant_id', $tenantId)->where('status', 'interview')->count(),
-                'offer' => \App\Models\Applicant::where('tenant_id', $tenantId)->where('status', 'offer')->count(),
-                'hired' => \App\Models\Applicant::where('tenant_id', $tenantId)->where('status', 'hired')->count(),
-                'rejected' => \App\Models\Applicant::where('tenant_id', $tenantId)->where('status', 'rejected')->count(),
-            ],
-            'requisitions' => [
-                'pending' => JobRequisition::where('tenant_id', $tenantId)->where('status', 'pending')->count(),
-            ],
-            'velocity' => [
-                'average_time_to_hire_days' => $avgTime,
-            ],
-            'sources' => $sources,
-        ];
+            // Trend Calculations
+            $jobsPastCount = JobPosting::where('tenant_id', $tenantId)->where('status', 'active')->where('created_at', '<', $thirtyDaysAgo)->count();
+            $jobsTrend = $jobsPastCount > 0 ? round((($activeJobsCount - $jobsPastCount) / $jobsPastCount) * 100, 1) : ($activeJobsCount > 0 ? 100 : 0);
+
+            $candidatesPastCount = \App\Models\Applicant::where('tenant_id', $tenantId)->where('created_at', '<', $thirtyDaysAgo)->count();
+            $candidatesTrend = $candidatesPastCount > 0 ? round((($candidatesCount - $candidatesPastCount) / $candidatesPastCount) * 100, 1) : ($candidatesCount > 0 ? 100 : 0);
+
+            $newYesterdayCount = \App\Models\Applicant::where('tenant_id', $tenantId)->whereDate('created_at', $yesterday)->count();
+            $newTodayTrend = $newYesterdayCount > 0 ? round((($newTodayCount - $newYesterdayCount) / $newYesterdayCount) * 100, 1) : ($newTodayCount > 0 ? 100 : 0);
+
+            $hiredApps = \App\Models\Applicant::where('tenant_id', $tenantId)->where('status', 'hired')->get();
+            $avgTime = $hiredApps->count() > 0 ? round($hiredApps->map(function ($app) {
+                return $app->created_at->diffInDays($app->updated_at);
+            })->average()) : 0;
+
+            $sources = \App\Models\Applicant::where('tenant_id', $tenantId)
+                ->select('source', DB::raw('count(*) as count'))
+                ->groupBy('source')
+                ->orderByDesc('count')
+                ->get();
+
+            $eventsPastCount = Event::where('tenant_id', $tenantId)->where('event_date', '>=', now()->subDays(30))->where('created_at', '<', now()->subDays(30))->count();
+            $eventsTrend = $eventsPastCount > 0 ? round((($activeEventsCount - $eventsPastCount) / $eventsPastCount) * 100, 1) : ($activeEventsCount > 0 ? 100 : 0);
+
+            return [
+                'total_active_jobs' => $activeJobsCount,
+                'total_active_jobs_trend' => $jobsTrend,
+                'total_active_jobs_label' => 'vs last month',
+                'total_candidates' => $candidatesCount,
+                'total_candidates_trend' => $candidatesTrend,
+                'total_candidates_label' => 'vs last month',
+                'total_employees' => $employeesCount,
+                'new_applications_today' => $newTodayCount,
+                'new_applications_today_trend' => $newTodayTrend,
+                'new_applications_today_label' => 'vs yesterday',
+                'active_events' => $activeEventsCount,
+                'active_events_trend' => $eventsTrend,
+                'active_events_label' => 'vs last month',
+                'pending_requisitions' => JobRequisition::where('tenant_id', $tenantId)->where('status', 'pending')->count(),
+                'recent_applicants' => \App\Models\Applicant::with('jobPosting')
+                    ->where('tenant_id', $tenantId)
+                    ->orderBy('created_at', 'desc')
+                    ->limit(5)
+                    ->get(),
+                'funnel' => [
+                    'applied' => \App\Models\Applicant::where('tenant_id', $tenantId)->count(),
+                    'interview' => \App\Models\Applicant::where('tenant_id', $tenantId)->where('status', 'interview')->count(),
+                    'offer' => \App\Models\Applicant::where('tenant_id', $tenantId)->where('status', 'offer')->count(),
+                    'hired' => \App\Models\Applicant::where('tenant_id', $tenantId)->where('status', 'hired')->count(),
+                    'rejected' => \App\Models\Applicant::where('tenant_id', $tenantId)->where('status', 'rejected')->count(),
+                ],
+                'requisitions' => [
+                    'pending' => JobRequisition::where('tenant_id', $tenantId)->where('status', 'pending')->count(),
+                ],
+                'velocity' => [
+                    'average_time_to_hire_days' => $avgTime,
+                ],
+                'sources' => $sources,
+            ];
+        });
 
         return response()->json($stats);
     }

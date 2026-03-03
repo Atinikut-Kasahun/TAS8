@@ -6,126 +6,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Offer Letter</title>
     <style>
-        * {
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #1A2B3D;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+            background-color: #F9FAFB;
         }
 
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #f0f4f8;
-        }
-
-        .wrapper {
-            max-width: 680px;
+        .container {
+            max-width: 600px;
             margin: 40px auto;
-            background: #fff;
-            border-radius: 16px;
+            background: #ffffff;
+            border: 1px solid #F0F0F0;
+            border-radius: 24px;
             overflow: hidden;
-            box-shadow: 0 8px 40px rgba(0, 0, 0, .08);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
         }
 
         .header {
             background: linear-gradient(135deg, #1A2B3D 0%, #1F7A6E 100%);
-            padding: 48px 48px 40px;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 32px;
-        }
-
-        .logo-box {
-            background: #fff;
-            color: #1A2B3D;
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 900;
-            font-size: 18px;
-        }
-
-        .logo-name {
-            color: #fff;
-            font-weight: 900;
-            font-size: 20px;
-            letter-spacing: -0.5px;
+            color: #ffffff;
+            padding: 48px;
+            text-align: center;
         }
 
         .badge {
             display: inline-block;
-            background: rgba(255, 255, 255, .15);
-            color: #a7f3d0;
-            font-size: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            font-size: 11px;
             font-weight: 800;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             text-transform: uppercase;
-            padding: 6px 14px;
+            padding: 6px 16px;
             border-radius: 100px;
-            border: 1px solid rgba(255, 255, 255, .2);
             margin-bottom: 16px;
         }
 
         .header h1 {
-            color: #fff;
+            margin: 0;
             font-size: 28px;
             font-weight: 900;
             line-height: 1.2;
+            letter-spacing: -0.02em;
         }
 
-        .header p {
-            color: rgba(255, 255, 255, .7);
-            font-size: 14px;
-            margin-top: 6px;
-        }
-
-        .body {
+        .content {
             padding: 48px;
         }
 
         .greeting {
-            font-size: 16px;
-            color: #1A2B3D;
+            font-size: 18px;
             font-weight: 700;
             margin-bottom: 16px;
         }
 
         .intro {
-            color: #4a5568;
-            font-size: 15px;
-            line-height: 1.7;
+            color: #4B5563;
+            font-size: 16px;
             margin-bottom: 32px;
         }
 
         .offer-card {
-            background: linear-gradient(135deg, #f0fdf9 0%, #ecfdf5 100%);
-            border: 1.5px solid #6ee7b7;
-            border-radius: 16px;
+            background: #F0FDF9;
+            border: 1px solid #D1FAE5;
+            border-radius: 20px;
             padding: 32px;
             margin-bottom: 32px;
         }
 
         .offer-title {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 800;
-            letter-spacing: 3px;
+            color: #047857;
             text-transform: uppercase;
-            color: #1F7A6E;
-            margin-bottom: 20px;
+            letter-spacing: 1.5px;
+            margin-bottom: 24px;
+            display: block;
         }
 
         .offer-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 14px 0;
-            border-bottom: 1px solid #d1fae5;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(4, 120, 87, 0.1);
         }
 
         .offer-row:last-child {
@@ -133,130 +99,93 @@
         }
 
         .offer-label {
-            font-size: 12px;
-            font-weight: 700;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-size: 14px;
+            color: #6B7280;
+            font-weight: 600;
         }
 
         .offer-value {
             font-size: 15px;
-            font-weight: 900;
-            color: #1A2B3D;
+            color: #111827;
+            font-weight: 700;
+            text-align: right;
         }
 
-        .salary-value {
-            font-size: 22px;
-            font-weight: 900;
+        .salary-highlight {
+            font-size: 20px;
             color: #1F7A6E;
+            font-weight: 900;
         }
 
         .notes-section {
-            background: #f8fafc;
-            border-radius: 12px;
+            background: #F9FAFB;
+            border-left: 4px solid #1F7A6E;
             padding: 24px;
             margin-bottom: 32px;
-            border-left: 4px solid #1F7A6E;
+            border-radius: 0 16px 16px 0;
         }
 
         .notes-section p {
-            color: #4a5568;
+            margin: 0;
+            font-style: italic;
+            color: #4B5563;
             font-size: 14px;
-            line-height: 1.7;
         }
 
         .cta {
             text-align: center;
-            margin: 32px 0;
+            margin: 40px 0;
         }
 
         .cta p {
-            color: #4a5568;
-            font-size: 14px;
-            margin-bottom: 16px;
-            line-height: 1.6;
+            font-size: 15px;
+            color: #6B7280;
+            margin-bottom: 24px;
         }
 
-        .steps {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 32px;
+        .signature {
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid #F0F0F0;
         }
 
-        .step {
-            flex: 1;
-            text-align: center;
-            padding: 20px 16px;
-            background: #f8fafc;
-            border-radius: 12px;
-            border: 1px solid #e5e7eb;
-        }
-
-        .step-num {
-            width: 28px;
-            height: 28px;
-            background: #1F7A6E;
-            color: #fff;
-            border-radius: 50%;
+        .company-name {
             font-weight: 900;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 8px;
-        }
-
-        .step-label {
-            font-size: 11px;
-            font-weight: 700;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: #1A2B3D;
         }
 
         .footer {
-            background: #1A2B3D;
-            padding: 32px 48px;
+            background: #111827;
+            padding: 40px;
             text-align: center;
         }
 
         .footer p {
-            color: rgba(255, 255, 255, .5);
+            color: #9CA3AF;
             font-size: 12px;
-            line-height: 1.7;
-        }
-
-        .footer strong {
-            color: rgba(255, 255, 255, .9);
+            margin: 4px 0;
         }
     </style>
 </head>
 
 <body>
-    <div class="wrapper">
+    <div class="container">
         <div class="header">
-            <div class="logo">
-                <div class="logo-box">D</div>
-                <span class="logo-name">{{ $applicant->tenant->name ?? 'Droga Pharma' }}</span>
-            </div>
-            <div class="badge">🎉 Official Offer Letter</div>
-            <h1>Congratulations,<br>{{ explode(' ', $applicant->name)[0] }}!</h1>
-            <p>We are delighted to extend this offer of employment.</p>
+            <div class="badge">Official Offer Letter</div>
+            <h1>Congratulations, {{ explode(' ', $applicant->name)[0] }}!</h1>
         </div>
 
-        <div class="body">
+        <div class="content">
             <p class="greeting">Dear {{ $applicant->name }},</p>
             <p class="intro">
-                We are thrilled to inform you that after careful consideration,
-                <strong>{{ $applicant->tenant->name ?? 'Droga Pharma' }}</strong>
-                would like to formally offer you the position of <strong>{{ $jobPosting->title }}</strong>.
-                We believe your skills and experience are an excellent match for our team, and we look forward to you
-                joining us.
+                We are thrilled to formally offer you the position of <strong
+                    class="company-name">{{ $jobPosting->title }}</strong> at <strong
+                    class="company-name">{{ $applicant->tenant->name ?? 'our company' }}</strong>. Your skills and
+                passion truly stood out during our interview process, and we are excited to have you join our team.
             </p>
 
             <div class="offer-card">
-                <p class="offer-title">📄 Your Offer Details</p>
+                <span class="offer-title">Offer Summary</span>
                 <div class="offer-row">
                     <span class="offer-label">Position</span>
                     <span class="offer-value">{{ $jobPosting->title }}</span>
@@ -266,69 +195,37 @@
                     <span class="offer-value">{{ $jobPosting->department ?? 'To be confirmed' }}</span>
                 </div>
                 <div class="offer-row">
-                    <span class="offer-label">Location</span>
-                    <span class="offer-value">{{ $jobPosting->location ?? 'Addis Ababa' }}</span>
-                </div>
-                <div class="offer-row">
-                    <span class="offer-label">Employment Type</span>
-                    <span class="offer-value">{{ ucfirst($jobPosting->type ?? 'Full-Time') }}</span>
-                </div>
-                <div class="offer-row">
                     <span class="offer-label">Start Date</span>
                     <span class="offer-value">{{ $startDate }}</span>
                 </div>
                 <div class="offer-row">
                     <span class="offer-label">Offered Salary</span>
-                    <span class="salary-value">{{ $offeredSalary }}</span>
+                    <span class="offer-value salary-highlight">{{ $offeredSalary }}</span>
                 </div>
             </div>
 
             @if($notes)
                 <div class="notes-section">
-                    <p class="offer-title" style="margin-bottom:10px;">📝 Additional Notes</p>
+                    <span class="offer-title" style="color: #1F7A6E; margin-bottom: 8px;">Additional Notes</span>
                     <p>{{ $notes }}</p>
                 </div>
             @endif
 
-            <div class="cta">
-                <p>
-                    To formally accept this offer, please reply to this email with your acceptance confirmation, or
-                    contact our HR team directly.
-                    We kindly ask you to respond within <strong>5 business days</strong>.
+            <p style="color: #4B5563; font-size: 15px;">
+                To accept this offer, please reply to this email with your confirmation or contact us within 5 business
+                days. We look forward to working with you!
+            </p>
+
+            <div class="signature">
+                <p>Warm regards,<br>
+                    <span class="company-name">{{ $applicant->tenant->name ?? 'The' }} Hiring Team</span>
                 </p>
             </div>
-
-            <div class="steps">
-                <div class="step">
-                    <div class="step-num">1</div>
-                    <div class="step-label">Review Offer</div>
-                </div>
-                <div class="step">
-                    <div class="step-num">2</div>
-                    <div class="step-label">Accept & Reply</div>
-                </div>
-                <div class="step">
-                    <div class="step-num">3</div>
-                    <div class="step-label">Onboarding</div>
-                </div>
-            </div>
-
-            <p style="color:#4a5568;font-size:14px;line-height:1.7;">
-                We are excited about the prospect of you joining the {{ $applicant->tenant->name ?? 'Droga Pharma' }}
-                family.
-                Should you have any questions about this offer, please don't hesitate to reach out.
-            </p>
-            <p style="margin-top:20px;color:#4a5568;font-size:14px;">
-                Warm regards,<br>
-                <strong style="color:#1A2B3D;">The Hiring Team</strong><br>
-                <span style="color:#1F7A6E;">{{ $applicant->tenant->name ?? 'Droga Pharma' }}</span>
-            </p>
         </div>
 
         <div class="footer">
-            <p>This offer is subject to background verification and signing of the employment contract.</p>
-            <p style="margin-top:8px;">© {{ date('Y') }}
-                <strong>{{ $applicant->tenant->name ?? 'Droga Pharma' }}</strong>. All rights reserved.</p>
+            <p>&copy; {{ date('Y') }} {{ $applicant->tenant->name ?? 'Company' }} &bull; Powered by Droga TAS</p>
+            <p>This is an automated professional communication.</p>
         </div>
     </div>
 </body>

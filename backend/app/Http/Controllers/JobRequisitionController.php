@@ -14,15 +14,19 @@ class JobRequisitionController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $query = JobRequisition::with(['requester', 'approvedBy']);
+        $query = JobRequisition::with(['requester', 'approvedBy', 'tenant']);
 
-        // Tenant Isolation (except Global Admin)
-        if (!$user->hasRole('admin')) {
+        // Tenant Isolation (except Global Admin and HR Manager)
+        if (!$user->hasRole('admin') && !$user->hasRole('hr_manager')) {
             $query->where('tenant_id', $user->tenant_id);
+        } elseif ($request->has('tenant_id') && !empty($request->tenant_id)) {
+            // Allow Global Admin or HR Manager to filter by a specific tenant
+            $query->where('tenant_id', $request->tenant_id);
         }
 
-        // Role-based filtering
-        if ($user->hasRole('hiring_manager')) {
+        // Role-based filtering: Hiring managers only see their own requests
+        // But HR Managers and Admins see everything in their tenant (or globally)
+        if ($user->hasRole('hiring_manager') && !$user->hasRole('hr_manager') && !$user->hasRole('admin')) {
             $query->where('requested_by', $user->id);
         }
 
@@ -35,19 +39,22 @@ class JobRequisitionController extends Controller
             });
         }
 
-        $requisitions = $query->orderBy('created_at', 'desc')->get();
-
-        // Calculate KPIs
+        // Calculate KPIs using query clones for database-level counting
         $kpis = [
-            'open_requests' => $requisitions->where('status', 'pending')->count(),
-            'approved_this_quarter' => $requisitions->where('status', 'approved')
+            'open_requests' => (clone $query)->where('status', 'pending')->count(),
+            'approved_this_quarter' => (clone $query)->where('status', 'approved')
                 ->where('approved_at', '>=', now()->startOfQuarter())->count(),
-            'team_growth' => $requisitions->where('status', 'approved')->sum('headcount'),
-            'awaiting_approval' => $requisitions->where('status', 'pending')->count(),
-            'avg_approval_time_hours' => round($requisitions->where('status', 'approved')->avg(function ($r) {
-                return $r->created_at->diffInHours($r->approved_at);
-            }) ?? 0, 1),
+            'team_growth' => (clone $query)->where('status', 'approved')->sum('headcount'),
+            'awaiting_approval' => (clone $query)->where('status', 'pending')->count(),
+            'avg_approval_time_hours' => round((clone $query)->where('status', 'approved')
+                ->whereNotNull('approved_at')
+                ->get()
+                ->avg(function ($r) {
+                    return $r->created_at->diffInHours($r->approved_at);
+                }) ?? 0, 1),
         ];
+
+        $requisitions = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'data' => $requisitions,
@@ -70,7 +77,7 @@ class JobRequisitionController extends Controller
         ]);
 
         $user = $request->user();
-        $tenantId = $user->tenant_id ?? \App\Models\Tenant::first()?->id;
+        $tenantId = $user->tenant_id;
 
         if (!$tenantId) {
             return response()->json(['error' => 'No active company context found.'], 400);
@@ -133,14 +140,18 @@ class JobRequisitionController extends Controller
 
         $request->validate(['ids' => 'required|array', 'ids.*' => 'integer']);
 
-        $updated = JobRequisition::whereIn('id', $request->ids)
-            ->where('tenant_id', $user->tenant_id)
-            ->where('status', 'pending')
-            ->update([
-                'status' => 'approved',
-                'approved_at' => now(),
-                'approved_by' => $user->id,
-            ]);
+        $query = JobRequisition::whereIn('id', $request->ids)
+            ->where('status', 'pending');
+
+        if (!$user->hasRole('admin') && !$user->hasRole('hr_manager')) {
+            $query->where('tenant_id', $user->tenant_id);
+        }
+
+        $updated = $query->update([
+            'status' => 'approved',
+            'approved_at' => now(),
+            'approved_by' => $user->id,
+        ]);
 
         return response()->json(['approved_count' => $updated]);
     }

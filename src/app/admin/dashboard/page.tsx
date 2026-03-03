@@ -186,7 +186,7 @@ function AddUserModal({ tenant, tenants, onClose, onAdded }: {
                             value={form.role_slug} onChange={e => setForm({ ...form, role_slug: e.target.value })}>
                             <option value="admin">Global Admin</option>
                             <option value="hr_manager">HR Manager</option>
-                            <option value="hiring_manager">Hiring Manager</option>
+                            <option value="hiring_manager">Department Manager</option>
                             <option value="ta_manager">Talent Acquisition</option>
                         </select>
                     </div>
@@ -432,7 +432,7 @@ function CompanyPanel({
                                     >
                                         <option value="admin">Global Admin</option>
                                         <option value="hr_manager">HR Manager</option>
-                                        <option value="hiring_manager">Hiring Manager</option>
+                                        <option value="hiring_manager">Department Manager</option>
                                         <option value="ta_manager">Talent Acq.</option>
                                     </select>
                                     <div className="opacity-0 group-hover:opacity-100 flex items-center transition-opacity border-l border-gray-200 pl-1 ml-1">
@@ -872,11 +872,11 @@ function GlobalDashboard({ user }: { user: any }) {
         try {
             const [dashData, usersData, tenantsData] = await Promise.all([
                 apiFetch('/v1/dashboard'),
-                apiFetch('/v1/global-users'),
+                apiFetch('/v1/global-users?per_page=1000'),
                 apiFetch('/v1/tenants'),
             ]);
             setStats(dashData);
-            setAllUsers(usersData?.users || []);
+            setAllUsers(usersData?.data || []);
             const rawTenants = Array.isArray(tenantsData) ? tenantsData : [];
             setTenants(rawTenants);
 
@@ -1085,6 +1085,7 @@ function GlobalDashboard({ user }: { user: any }) {
                         if (tab === 'Users') return <GlobalUsersView />;
                         if (tab === 'Jobs') return <GlobalJobsView tenants={tenants} />;
                         if (tab === 'Candidates') return <GlobalApplicantsView tenants={tenants} />;
+                        if (tab === 'HiringPlan') return <GlobalRequisitionsView tenants={tenants} />;
                         if (tab === 'Calendar') return <GlobalInterviewsView tenants={tenants} />;
                         if (tab === 'Events') return <GlobalEventsView tenants={tenants} />;
                         if (tab === 'Reports') return <GlobalReportsView />;
@@ -1371,10 +1372,10 @@ function CompanyDashboard({ user }: { user: any }) {
                         return (
                             <>
                                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                    <StatCard title="Active Jobs" value={loading ? '—' : (stats?.total_active_jobs ?? 0)} icon={<Briefcase size={14} />} trend={5} />
-                                    <StatCard title="Total Candidates" value={loading ? '—' : (stats?.total_candidates ?? 0)} icon={<Users size={14} />} trend={12} />
-                                    <StatCard title="New Today" value={loading ? '—' : (stats?.new_applications_today ?? 0)} icon={<UserPlus size={14} />} />
-                                    <StatCard title="Total Employees" value={loading ? '—' : (stats?.total_employees ?? 0)} icon={<Building2 size={14} />} />
+                                    <StatCard title="Active Jobs" value={loading ? '—' : (stats?.total_active_jobs ?? 0)} icon={<Briefcase size={14} />} trend={stats?.total_active_jobs_trend} trendLabel={stats?.total_active_jobs_label} />
+                                    <StatCard title="Total Candidates" value={loading ? '—' : (stats?.total_candidates ?? 0)} icon={<Users size={14} />} trend={stats?.total_candidates_trend} trendLabel={stats?.total_candidates_label} />
+                                    <StatCard title="New Today" value={loading ? '—' : (stats?.new_applications_today ?? 0)} icon={<UserPlus size={14} />} trend={stats?.new_applications_today_trend} trendLabel={stats?.new_applications_today_label} />
+                                    <StatCard title="Active Events" value={loading ? '—' : (stats?.active_events ?? 0)} icon={<Calendar size={14} />} trend={stats?.active_events_trend} trendLabel={stats?.active_events_label} />
                                 </div>
 
                                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -1456,13 +1457,18 @@ function Pagination({ meta, onPageChange, onPerPageChange }: any) {
                     <ChevronRight size={14} className="rotate-180" />
                 </button>
 
-                {Array.from({ length: Math.min(5, last_page) }, (_, i) => {
-                    let pageNum = current_page <= 3 ? i + 1 : current_page + i - 2;
-                    if (pageNum > last_page) pageNum = last_page - (4 - i);
-                    if (pageNum < 1) pageNum = i + 1;
-                    if (pageNum > last_page) return null;
-
-                    return (
+                {(() => {
+                    const half = 2;
+                    let start = Math.max(1, current_page - half);
+                    let end = Math.min(last_page, current_page + half);
+                    // Ensure we always show up to 5 pages
+                    if (end - start < 4) {
+                        if (start === 1) end = Math.min(last_page, start + 4);
+                        else start = Math.max(1, end - 4);
+                    }
+                    const pages: number[] = [];
+                    for (let p = start; p <= end; p++) pages.push(p);
+                    return pages.map(pageNum => (
                         <button
                             key={pageNum}
                             onClick={() => onPageChange(pageNum)}
@@ -1470,8 +1476,8 @@ function Pagination({ meta, onPageChange, onPerPageChange }: any) {
                         >
                             {pageNum}
                         </button>
-                    );
-                })}
+                    ));
+                })()}
 
                 <button
                     onClick={() => onPageChange(current_page + 1)}
@@ -1728,51 +1734,128 @@ function CompanyJobsView({ user }: { user: any }) {
 
 function CompanyApplicantsView({ user }: { user: any }) {
     const [applicants, setApplicants] = useState<any[]>([]);
+    const [meta, setMeta] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [status, setStatus] = useState('');
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
+
+    const fetchApplicants = useCallback(async () => {
+        setLoading(true);
+        try {
+            const params = new URLSearchParams({
+                page: page.toString(),
+                per_page: perPage.toString(),
+                search: search,
+                status: status
+            });
+            const data = await apiFetch(`/v1/applicants?${params.toString()}`);
+            setApplicants(data?.data || []);
+            setMeta(data);
+        } catch (err) {
+            console.error('Failed to fetch applicants:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, [page, perPage, search, status]);
 
     useEffect(() => {
-        apiFetch('/v1/applicants').then(data => {
-            setApplicants(data?.data || []);
-            setLoading(false);
-        }).catch(() => setLoading(false));
-    }, []);
+        const timer = setTimeout(() => {
+            fetchApplicants();
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [fetchApplicants]);
+
+    const statusColors: Record<string, string> = {
+        'new': 'bg-gray-100 text-gray-500',
+        'under_review': 'bg-blue-100 text-blue-700',
+        'shortlisted': 'bg-amber-100 text-amber-700',
+        'interview': 'bg-purple-100 text-purple-700',
+        'offer': 'bg-emerald-100 text-emerald-700',
+        'hired': 'bg-green-100 text-green-700',
+        'rejected': 'bg-red-100 text-red-700',
+    };
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100">
-                <h2 className="font-bold text-gray-900 text-sm">All Candidates</h2>
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="font-black text-gray-900 text-sm">Talent Pipeline</h2>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{user.tenant?.name}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search candidates..."
+                            value={search}
+                            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                            className="bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 w-48 transition-all"
+                        />
+                    </div>
+                    <select
+                        value={status}
+                        onChange={e => { setStatus(e.target.value); setPage(1); }}
+                        className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    >
+                        <option value="">All Statuses</option>
+                        {Object.keys(statusColors).map(s => <option key={s} value={s}>{s.replace('_', ' ').toUpperCase()}</option>)}
+                    </select>
+                </div>
             </div>
-            {loading ? (
-                <div className="p-10 flex justify-center"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" /></div>
-            ) : (
+
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-gray-50 bg-gray-50/50">
-                                <th className="px-6 py-3 text-left text-[10px] font-black uppercase tracking-widest text-gray-400">Candidate</th>
-                                <th className="px-6 py-3 text-left text-[10px] font-black uppercase tracking-widest text-gray-400">Job Position</th>
-                                <th className="px-6 py-3 text-left text-[10px] font-black uppercase tracking-widest text-gray-400">Status</th>
+                                {['Candidate', 'Position', 'Applied Date', 'Pipeline Status'].map(h => (
+                                    <th key={h} className="px-6 py-3 text-left text-[10px] font-black uppercase tracking-widest text-gray-400">{h}</th>
+                                ))}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {applicants.map((a: any) => (
-                                <tr key={a.id} className="hover:bg-gray-50/50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="font-semibold text-gray-800 text-sm">{a.name}</div>
-                                        <div className="text-[11px] text-gray-400">{a.email}</div>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-500">{a.job_posting?.title}</td>
-                                    <td className="px-6 py-4">
-                                        <span className="px-2 py-0.5 rounded-full bg-blue-50 text-[10px] font-black text-blue-600 uppercase tracking-wider border border-blue-100">
-                                            {a.status}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
+                            {loading ? (
+                                <tr><td colSpan={4} className="p-12 text-center"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto" /></td></tr>
+                            ) : applicants.length === 0 ? (
+                                <tr><td colSpan={4} className="p-12 text-center text-xs text-gray-400 italic">No candidates found matching your criteria.</td></tr>
+                            ) : (
+                                applicants.map((a: any) => (
+                                    <tr key={a.id} className="hover:bg-gray-50/50 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-900 to-blue-500 flex items-center justify-center text-white font-black text-xs uppercase shadow-md">
+                                                    {a.name?.charAt(0)}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-gray-800 text-sm leading-none mb-1">{a.name}</span>
+                                                    <span className="text-[11px] text-gray-400">{a.email}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <p className="text-sm font-semibold text-gray-700">{a.job_posting?.title || '—'}</p>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight mt-0.5">{a.job_posting?.department || '—'}</p>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <p className="text-xs font-bold text-gray-800">{new Date(a.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                            <p className="text-[10px] text-gray-400 font-medium">{new Date(a.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border border-transparent shadow-sm ${statusColors[a.status] || 'bg-gray-50 text-gray-400'}`}>
+                                                {a.status.replace('_', ' ')}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
-            )}
+                {!loading && <Pagination meta={meta} onPageChange={setPage} onPerPageChange={setPerPage} />}
+            </div>
         </div>
     );
 }
@@ -1873,61 +1956,70 @@ function GlobalJobsView({ tenants }: { tenants: any[] }) {
     );
 }
 
-/* ─── Global Applicants View ─────────────────────────────── */
-function GlobalApplicantsView({ tenants }: { tenants: any[] }) {
-    const [allApplicants, setAllApplicants] = useState<any[]>([]);
+/* ─── Global Requisitions View ────────────────────────────── */
+function GlobalRequisitionsView({ tenants }: { tenants: any[] }) {
+    const [reqs, setReqs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterTenant, setFilterTenant] = useState('');
-    const [updatingId, setUpdatingId] = useState<string | null>(null);
-    const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+    const [filterStatus, setFilterStatus] = useState('');
+    const [actionLoading, setActionLoading] = useState<number | false>(false);
 
-    const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 3000);
-    };
+    const fetchReqs = useCallback(async () => {
+        setLoading(true);
+        try {
+            const params = new URLSearchParams();
+            if (filterTenant) params.set('tenant_id', filterTenant);
+            if (filterStatus) params.set('status', filterStatus);
+            const data = await apiFetch(`/v1/requisitions?${params.toString()}`);
+            setReqs(data?.data || []);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    }, [filterTenant, filterStatus]);
 
     useEffect(() => {
-        setLoading(true);
-        // Load all applicants (admin gets all tenants from backend)
-        apiFetch(`/v1/applicants?per_page=200`).then(data => {
-            setAllApplicants(data?.data || []);
-            setLoading(false);
-        }).catch(() => setLoading(false));
-    }, []);
+        fetchReqs();
+    }, [fetchReqs]);
 
-    // Client-side filter by company
-    const applicants = filterTenant
-        ? allApplicants.filter(a => String(a.tenant_id) === String(filterTenant))
-        : allApplicants;
-
-    const handleStatusChange = async (id: string, newStatus: string) => {
-        setUpdatingId(id);
+    const handleApprove = async (id: number) => {
+        setActionLoading(id);
         try {
-            await apiFetch(`/v1/admin/applicants/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
-            setAllApplicants(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
-            showToast('Status updated successfully.');
-        } catch { showToast('Failed to update status.', 'error'); }
-        finally { setUpdatingId(null); }
+            await apiFetch(`/v1/requisitions/${id}/status`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status: 'approved' }),
+            });
+            fetchReqs();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setActionLoading(false);
+        }
     };
 
-    const statusColors: Record<string, string> = {
-        'under_review': 'bg-blue-50 text-blue-600',
-        'shortlisted': 'bg-amber-50 text-amber-600',
-        'interview': 'bg-purple-50 text-purple-600',
-        'hired': 'bg-emerald-50 text-emerald-600',
-        'rejected': 'bg-red-50 text-red-500',
+    const statusColor: Record<string, string> = {
+        approved: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+        pending: 'bg-amber-50 text-amber-600 border-amber-100',
+        rejected: 'bg-red-50 text-red-500 border-red-100',
     };
 
     return (
         <div className="space-y-4">
-            {toast && <Toast msg={toast.msg} type={toast.type} />}
             <div className="flex flex-wrap items-center gap-3">
-                <h2 className="font-black text-gray-900 flex-1">Applicants — Global Pipeline</h2>
+                <h2 className="font-black text-gray-900 flex-1">Hiring Plan — All Companies</h2>
                 <select className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F7A6E]" value={filterTenant} onChange={e => setFilterTenant(e.target.value)}>
                     <option value="">All Companies</option>
                     {tenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
+                <select className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F7A6E]" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending Approval</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                </select>
             </div>
+
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 {loading ? (
                     <div className="p-10 flex justify-center"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1F7A6E]" /></div>
@@ -1936,47 +2028,43 @@ function GlobalApplicantsView({ tenants }: { tenants: any[] }) {
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-gray-50 bg-gray-50/60">
-                                    {['Candidate', 'Applied For', 'Company', 'Date', 'Pipeline Status'].map(h => (
+                                    {['Requisition', 'Company', 'Department', 'Requester', 'Status', 'Action'].map(h => (
                                         <th key={h} className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest text-gray-400">{h}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                                {applicants.length === 0 && (
-                                    <tr><td colSpan={5} className="p-10 text-center text-sm text-gray-400 italic">No applicants found.</td></tr>
+                                {reqs.length === 0 && (
+                                    <tr><td colSpan={6} className="p-10 text-center text-sm text-gray-400 italic">No requisitions found.</td></tr>
                                 )}
-                                {applicants.map((a: any) => (
-                                    <tr key={a.id} className="hover:bg-gray-50/50 transition-colors">
+                                {reqs.map((req: any) => (
+                                    <tr key={req.id} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="px-5 py-3.5">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1A2B3D] to-[#1F7A6E] flex items-center justify-center text-white font-black text-xs shrink-0">{a.name?.charAt(0)}</div>
-                                                <div>
-                                                    <p className="font-semibold text-gray-800 text-sm">{a.name}</p>
-                                                    <p className="text-[11px] text-gray-400">{a.email}</p>
-                                                </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-gray-800 text-sm">{req.title}</span>
+                                                <span className="text-[10px] text-gray-400">REQ{req.id}</span>
                                             </div>
                                         </td>
-                                        <td className="px-5 py-3.5 text-sm text-gray-600">{a.job_posting?.title || '—'}</td>
                                         <td className="px-5 py-3.5">
-                                            <span className="text-xs text-gray-500 font-medium">{a.tenant?.name || '—'}</span>
+                                            <span className="text-sm text-gray-600">{req.tenant?.name || '—'}</span>
                                         </td>
-                                        <td className="px-5 py-3.5 text-xs text-gray-400">{new Date(a.created_at).toLocaleDateString()}</td>
+                                        <td className="px-5 py-3.5 text-sm text-gray-500">{req.department}</td>
+                                        <td className="px-5 py-3.5 text-sm text-gray-500">{req.requester?.name || '—'}</td>
                                         <td className="px-5 py-3.5">
-                                            <div className="flex items-center gap-2">
-                                                {updatingId === a.id && <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#1F7A6E]" />}
-                                                <select
-                                                    value={a.status}
-                                                    onChange={e => handleStatusChange(a.id, e.target.value)}
-                                                    disabled={updatingId === a.id}
-                                                    className={`text-[11px] font-bold px-2 py-1 rounded-lg border-none cursor-pointer focus:ring-1 focus:ring-[#1F7A6E] ${statusColors[a.status] || 'bg-gray-100 text-gray-500'}`}
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusColor[req.status] || 'border-gray-200'}`}>
+                                                {req.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-5 py-3.5">
+                                            {req.status === 'pending' && (
+                                                <button
+                                                    onClick={() => handleApprove(req.id)}
+                                                    disabled={actionLoading === req.id}
+                                                    className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-100 transition"
                                                 >
-                                                    <option value="under_review">Under Review</option>
-                                                    <option value="shortlisted">Shortlisted</option>
-                                                    <option value="interview">Interview</option>
-                                                    <option value="hired">Hired ✅</option>
-                                                    <option value="rejected">Rejected</option>
-                                                </select>
-                                            </div>
+                                                    {actionLoading === req.id ? '...' : <Check size={12} />} Approve
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -1984,6 +2072,185 @@ function GlobalApplicantsView({ tenants }: { tenants: any[] }) {
                         </table>
                     </div>
                 )}
+            </div>
+        </div>
+    );
+}
+
+/* ─── Global Applicants View ─────────────────────────────── */
+function GlobalApplicantsView({ tenants }: { tenants: any[] }) {
+    const [applicants, setApplicants] = useState<any[]>([]);
+    const [meta, setMeta] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [filterTenant, setFilterTenant] = useState('');
+    const [filterStatus, setFilterStatus] = useState('');
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
+    const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
+    const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+        setToast({ msg, type });
+        setTimeout(() => setToast(null), 3000);
+    };
+
+    const fetchApplicants = useCallback(async () => {
+        setLoading(true);
+        try {
+            const params = new URLSearchParams({
+                page: page.toString(),
+                per_page: perPage.toString(),
+                tenant_id: filterTenant,
+                status: filterStatus,
+                search: search
+            });
+            const data = await apiFetch(`/v1/applicants?${params.toString()}`);
+            setApplicants(data?.data || []);
+            setMeta(data);
+        } catch (err) {
+            showToast('Failed to load applicants.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    }, [page, perPage, filterTenant, filterStatus, search]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchApplicants();
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [fetchApplicants]);
+
+    const handleStatusChange = async (id: string, newStatus: string) => {
+        setUpdatingId(id);
+        try {
+            await apiFetch(`/v1/admin/applicants/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
+            setApplicants(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
+            showToast('Status updated successfully.');
+        } catch { showToast('Failed to update status.', 'error'); }
+        finally { setUpdatingId(null); }
+    };
+
+    const statusColors: Record<string, string> = {
+        'under_review': 'bg-blue-50 text-blue-600 border-blue-100',
+        'shortlisted': 'bg-amber-50 text-amber-600 border-amber-100',
+        'interview': 'bg-purple-50 text-purple-600 border-purple-100',
+        'hired': 'bg-emerald-50 text-emerald-600 border-emerald-100',
+        'rejected': 'bg-red-50 text-red-500 border-red-100',
+        'new': 'bg-gray-50 text-gray-500 border-gray-100',
+    };
+
+    return (
+        <div className="space-y-4">
+            {toast && <Toast msg={toast.msg} type={toast.type} />}
+            <div className="flex flex-wrap items-center gap-4">
+                <div className="flex-1 min-w-[200px]">
+                    <h2 className="font-black text-gray-900 text-lg">Applicants Pipeline</h2>
+                    <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest">Global Talent Management</p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search name, email..."
+                            value={search}
+                            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                            className="bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#1F7A6E]/20 w-64 transition-all"
+                        />
+                    </div>
+                    <select
+                        className="border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-[#1F7A6E]/20"
+                        value={filterTenant}
+                        onChange={e => { setFilterTenant(e.target.value); setPage(1); }}
+                    >
+                        <option value="">All Companies</option>
+                        {tenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                    <select
+                        className="border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-[#1F7A6E]/20"
+                        value={filterStatus}
+                        onChange={e => { setFilterStatus(e.target.value); setPage(1); }}
+                    >
+                        <option value="">All Statuses</option>
+                        {Object.keys(statusColors).map(s => <option key={s} value={s}>{s.replace('_', ' ').toUpperCase()}</option>)}
+                    </select>
+                </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-gray-50 bg-gray-50/50">
+                                {['Candidate', 'Position', 'Company', 'Applied Date', 'Status Action'].map(h => (
+                                    <th key={h} className="px-6 py-3 text-left text-[10px] font-black uppercase tracking-widest text-gray-400">{h}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {loading ? (
+                                <tr><td colSpan={5} className="p-16 text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1F7A6E] mx-auto" /></td></tr>
+                            ) : applicants.length === 0 ? (
+                                <tr><td colSpan={5} className="p-16 text-center text-sm text-gray-400 italic">No applicants found matching your criteria.</td></tr>
+                            ) : (
+                                applicants.map((a: any) => (
+                                    <tr key={a.id} className="hover:bg-gray-50/30 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#1A2B3D] to-[#1F7A6E] flex items-center justify-center text-white font-black text-xs uppercase shadow-sm">
+                                                    {a.name?.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-gray-900 text-sm leading-none mb-1">{a.name}</p>
+                                                    <p className="text-[11px] text-gray-400 font-medium">{a.email}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="max-w-[180px]">
+                                                <p className="text-sm font-semibold text-gray-700 truncate">{a.job_posting?.title || '—'}</p>
+                                                <p className="text-[10px] text-gray-400 uppercase font-black tracking-tighter mt-0.5">{a.job_posting?.department || 'General'}</p>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm font-bold text-gray-600">
+                                            <span className="flex items-center gap-2">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-[#1F7A6E]" />
+                                                {a.tenant?.name || '—'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <p className="text-sm font-bold text-gray-800">{new Date(a.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">{new Date(a.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                {updatingId === a.id && <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#1F7A6E]" />}
+                                                <select
+                                                    value={a.status}
+                                                    onChange={e => handleStatusChange(a.id, e.target.value)}
+                                                    disabled={updatingId === a.id}
+                                                    className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border border-transparent focus:ring-2 focus:ring-[#1F7A6E]/20 cursor-pointer transition-all ${statusColors[a.status] || 'bg-gray-100 text-gray-500'}`}
+                                                >
+                                                    <option value="new">New</option>
+                                                    <option value="under_review">Under Review</option>
+                                                    <option value="shortlisted">Shortlisted</option>
+                                                    <option value="interview">Interview</option>
+                                                    <option value="offer">Offer Sent</option>
+                                                    <option value="hired">Hired ✅</option>
+                                                    <option value="rejected">Rejected ❌</option>
+                                                </select>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+                {!loading && <Pagination meta={meta} onPageChange={setPage} onPerPageChange={setPerPage} />}
             </div>
         </div>
     );

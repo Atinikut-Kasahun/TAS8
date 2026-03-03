@@ -15,7 +15,9 @@ export default function Hero({ settings, onSearch, currentSearch }: { settings?:
     // Mock Dashboard Stats State
     const [mockStats, setMockStats] = useState({
         rating: "9.8",
-        members: "500+"
+        members: "500+",
+        cta_text: "Join 200+ team members",
+        cta_badge: "+12"
     });
 
     const [teamDiversity, setTeamDiversity] = useState([
@@ -146,9 +148,9 @@ export default function Hero({ settings, onSearch, currentSearch }: { settings?:
                             {[1, 2, 3, 4].map((i) => (
                                 <div key={i} className="w-8 h-8 rounded-full border-2 border-[#FDF9F3] bg-[#EFE8DE] flex items-center justify-center text-[10px] text-[#00453B]">👤</div>
                             ))}
-                            <div className="w-8 h-8 rounded-full border-2 border-[#FDF9F3] bg-[#00453B] text-white flex items-center justify-center text-[10px] font-bold">+12</div>
+                            <div className="w-8 h-8 rounded-full border-2 border-[#FDF9F3] bg-[#00453B] text-white flex items-center justify-center text-[10px] font-bold">{mockStats.cta_badge}</div>
                         </div>
-                        <p className="text-xs text-[#00453B]/60 font-medium">Join 200+ team members</p>
+                        <p className="text-xs text-[#00453B]/60 font-medium">{mockStats.cta_text}</p>
                     </motion.div>
                 </div>
 

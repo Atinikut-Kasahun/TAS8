@@ -118,7 +118,6 @@ function CareersContent() {
                 setIsGoogleSimulating(true);
             }
         } else {
-            setFormData(prev => ({ ...prev, email: `user@${provider.toLowerCase()}.com`, name: 'John Doe' }));
             setAppStep(2);
         }
     };
@@ -144,12 +143,6 @@ function CareersContent() {
         const file = e.target.files?.[0];
         if (file) {
             setResume(file);
-            // PRO TIP: Mock Resume Parsing
-            setTimeout(() => {
-                if (!formData.name) setFormData(prev => ({ ...prev, name: 'John Applicant' }));
-                if (!formData.professional_background) setFormData(prev => ({ ...prev, professional_background: 'Experienced Pharma Specialist with a focus on supply chain management...' }));
-                if (!formData.years_of_experience) setFormData(prev => ({ ...prev, years_of_experience: '5' }));
-            }, 1000);
         }
     };
 
@@ -361,19 +354,19 @@ function CareersContent() {
                                                 </div>
                                                 <div className="col-span-2">
                                                     <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Full Name</label>
-                                                    <input type="text" className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-[#1F7A6E] font-bold text-[#1A2B3D] text-sm" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                                                    <input type="text" placeholder="e.g. John Doe" className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-[#1F7A6E] font-bold text-[#1A2B3D] text-sm" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
                                                 </div>
                                                 <div className="col-span-2">
                                                     <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Email Address</label>
-                                                    <input type="email" className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-[#1F7A6E] font-bold text-[#1A2B3D] text-sm" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                                                    <input type="email" placeholder="e.g. john@example.com" className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-[#1F7A6E] font-bold text-[#1A2B3D] text-sm" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                                                 </div>
                                                 <div>
                                                     <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Phone Number</label>
-                                                    <input type="tel" className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-[#1F7A6E] font-bold text-[#1A2B3D] text-sm" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                                                    <input type="tel" placeholder="e.g. +251 9... or 09..." className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-[#1F7A6E] font-bold text-[#1A2B3D] text-sm" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
                                                 </div>
                                                 <div>
                                                     <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Age</label>
-                                                    <input type="number" className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-[#1F7A6E] font-bold text-[#1A2B3D] text-sm" value={formData.age} onChange={(e) => setFormData({ ...formData, age: e.target.value })} />
+                                                    <input type="number" placeholder="e.g. 25" className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-[#1F7A6E] font-bold text-[#1A2B3D] text-sm" value={formData.age} onChange={(e) => setFormData({ ...formData, age: e.target.value })} />
                                                 </div>
                                                 <div className="col-span-2">
                                                     <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Portfolio Link</label>
@@ -385,7 +378,6 @@ function CareersContent() {
                                                         <option value="">Select</option>
                                                         <option value="Male">Male</option>
                                                         <option value="Female">Female</option>
-                                                        <option value="Other">Other</option>
                                                     </select>
                                                 </div>
                                                 <div className="col-span-2">
@@ -394,7 +386,7 @@ function CareersContent() {
                                                 </div>
                                                 <div className="col-span-2">
                                                     <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Years of Experience</label>
-                                                    <input type="number" className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-[#1F7A6E] font-bold text-[#1A2B3D] text-sm" value={formData.years_of_experience} onChange={(e) => setFormData({ ...formData, years_of_experience: e.target.value })} />
+                                                    <input type="number" placeholder="e.g. 5" className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-[#1F7A6E] font-bold text-[#1A2B3D] text-sm" value={formData.years_of_experience} onChange={(e) => setFormData({ ...formData, years_of_experience: e.target.value })} />
                                                 </div>
                                             </div>
                                         </section>

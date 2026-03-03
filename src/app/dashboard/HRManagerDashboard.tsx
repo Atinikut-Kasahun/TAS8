@@ -227,7 +227,7 @@ export default function HRManagerDashboard({ user, activeTab: initialTab, onLogo
                                             className="accent-[#1F7A6E] rounded"
                                         />
                                     </th>
-                                    {['REQUISITION', 'HIRING MANAGER', 'REQUISITION OWNER', 'SALARY', 'PLAN DATE', 'STATUS'].map(h => (
+                                    {['REQUISITION', 'COMPANY', 'HIRING MANAGER', 'LOCATION', 'SALARY', 'PLAN DATE', 'STATUS'].map(h => (
                                         <th key={h} className="px-6 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest">{h}</th>
                                     ))}
                                 </tr>
@@ -252,8 +252,13 @@ export default function HRManagerDashboard({ user, activeTab: initialTab, onLogo
                                                 REQ{req.id} {req.title}
                                             </p>
                                             <p className="text-[11px] text-gray-400 mt-0.5 tracking-tight">
-                                                {req.department} · {req.tenant?.name || user.tenant?.name || 'Droga Pharma'}
+                                                {req.department}
                                             </p>
+                                        </td>
+                                        <td className="px-6 py-6">
+                                            <span className="text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-500 px-2 py-1 rounded">
+                                                {req.tenant?.name || '—'}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-6 text-[13px] text-gray-600">
                                             {req.requester?.name || 'Hiring Manager'}

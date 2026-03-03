@@ -31,9 +31,11 @@ class ApplicantController extends Controller
 
         if (!$user->hasRole('admin')) {
             $query->where('tenant_id', $user->tenant_id);
+        } elseif ($request->filled('tenant_id')) {
+            $query->where('tenant_id', $request->tenant_id);
         }
 
-        if ($request->has('search') && $request->search) {
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'LIKE', "%{$search}%")
@@ -43,14 +45,12 @@ class ApplicantController extends Controller
             });
         }
 
-        if ($request->has('job_posting_id')) {
+        if ($request->filled('job_posting_id')) {
             $query->where('job_posting_id', $request->job_posting_id);
         }
 
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
-        } else {
-            $query->where('status', '!=', 'hired');
         }
 
         $perPage = $request->input('per_page', 10);
@@ -136,9 +136,7 @@ class ApplicantController extends Controller
 
         // Send professional emails based on status change
         if ($request->status !== $oldStatus) {
-            if ($request->status === 'interview') {
-                Mail::to($applicant->email)->send(new InterviewInvitation($applicant, $applicant->jobPosting));
-            } elseif ($request->status === 'offer') {
+            if ($request->status === 'offer') {
                 $salary = $request->offered_salary ?? 'To be confirmed';
                 $startDate = $request->start_date ?? 'To be discussed';
                 $notes = $request->offer_notes;

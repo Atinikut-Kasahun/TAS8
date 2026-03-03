@@ -70,6 +70,7 @@ Route::middleware('mock.auth')->group(function () {
         Route::patch('/global-users/{id}/role', [\App\Http\Controllers\UserController::class, 'updateRole']);
         Route::post('/global-users/{id}/reset-password', [\App\Http\Controllers\UserController::class, 'resetPassword']);
         Route::delete('/global-users/{id}', [\App\Http\Controllers\UserController::class, 'destroy']);
+        Route::post('/account/change-password', [\App\Http\Controllers\UserController::class, 'changePassword']);
 
         Route::get('/tenants', [\App\Http\Controllers\TenantController::class, 'index']);
         Route::post('/tenants', [\App\Http\Controllers\TenantController::class, 'store']);

@@ -81,10 +81,13 @@
         <div class="content">
             <p>Hello <strong>{{ $applicant->name }}</strong>,</p>
 
-            <p>Thanks for applying to <span class="company-name">{{ $tenant->name }}</span>!</p>
-            <p>We’ve received your application for the <span class="highlight">{{ $job->title }}</span> role.</p>
+            <p>Thank you for applying for the <span class="highlight">{{ $job->title }}</span> position at <span
+                    class="company-name">{{ $tenant->name }}</span>.</p>
+            <p>We’ve successfully received your application. Our hiring team is currently reviewing your profile and
+                qualifications.</p>
 
-            <p>Our team is reviewing applications and will reach out if your profile is shortlisted.</p>
+            <p>We appreciate your interest in joining our team. <strong>Good luck with your application!</strong></p>
+            <p>We will reach out to you via email or phone if your profile is shortlisted for the next steps.</p>
 
             <div class="signature">
                 <p>Best regards,<br>

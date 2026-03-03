@@ -31,6 +31,13 @@ class UserController extends Controller
             });
         }
 
+        if ($request->has('role_slug') && !empty($request->role_slug)) {
+            $roleSlug = $request->role_slug;
+            $query->whereHas('roles', function ($q) use ($roleSlug) {
+                $q->where('slug', $roleSlug);
+            });
+        }
+
         if (!$user->hasRole('admin')) {
             if (!$user->tenant_id)
                 return response()->json(['message' => 'Unauthorized'], 403);
@@ -55,14 +62,11 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'role_slug' => 'required|exists:roles,slug',
-            'tenant_id' => $isGlobalAdmin ? 'required|exists:tenants,id' : 'nullable',
+            'tenant_id' => $isGlobalAdmin ? 'nullable|exists:tenants,id' : 'nullable',
         ]);
 
-        $tenantId = $isGlobalAdmin ? $validated['tenant_id'] : $admin->tenant_id;
-
-        if (!$tenantId) {
-            return response()->json(['message' => 'Unauthorized: No company assigned.'], 403);
-        }
+        // If Global Admin creating another admin, they can pick a tenant or default to the first one/null
+        $tenantId = $isGlobalAdmin ? ($validated['tenant_id'] ?? $admin->tenant_id) : $admin->tenant_id;
 
         // Auto-generate strong password
         $autoPassword = ucfirst(Str::random(4)) . '-' . Str::random(4);
@@ -140,6 +144,27 @@ class UserController extends Controller
             'message' => 'Password reset successfully',
             'generated_password' => $autoPassword
         ]);
+    }
+
+    /**
+     * Change the currently-authenticated user's own password.
+     */
+    public function changePassword(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json(['message' => 'Current password is incorrect.'], 422);
+        }
+
+        $user->update(['password' => Hash::make($request->new_password)]);
+
+        return response()->json(['message' => 'Password changed successfully.']);
     }
 
     /**

@@ -38,7 +38,7 @@ export default function SiteEditor() {
 
     // Section States
     const [heroStats, setHeroStats] = useState({ title: 'Training Hours', value: '1,200+', icon: 'BookOpen' });
-    const [mockStats, setMockStats] = useState({ rating: '4.8', members: '500+' });
+    const [mockStats, setMockStats] = useState({ rating: '4.8', members: '500+', cta_text: 'Join 200+ team members', cta_badge: '+12' });
     const [cultureText, setCultureText] = useState({
         heading: 'Life at Droga Group',
         bullets: [
@@ -191,6 +191,26 @@ export default function SiteEditor() {
                                     className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#1F7A6E] outline-none"
                                     value={mockStats.members}
                                     onChange={e => setMockStats({ ...mockStats, members: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">CTA Text (Join...)</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Join 200+ team members"
+                                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#1F7A6E] outline-none"
+                                    value={mockStats.cta_text}
+                                    onChange={e => setMockStats({ ...mockStats, cta_text: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wide">CTA Badge Count</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. +12"
+                                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#1F7A6E] outline-none"
+                                    value={mockStats.cta_badge}
+                                    onChange={e => setMockStats({ ...mockStats, cta_badge: e.target.value })}
                                 />
                             </div>
                         </div>

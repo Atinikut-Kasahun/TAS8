@@ -41,7 +41,7 @@ class InterviewScheduledApplicant extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.interview-scheduled-applicant',
+            view: 'emails.interview-scheduled-applicant',
         );
     }
 
